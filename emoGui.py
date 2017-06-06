@@ -17,6 +17,9 @@ class MyForm(QtGui.QMainWindow):
         self.ui.startButton.clicked.connect(self.start_clicked)
         self.ui.stopButton.clicked.connect(self.stop_clicked)
         self.ui.selectSaveDirButton.clicked.connect(self.select_save_clicked)
+        self.ui.selectProcessDirButton.clicked.connect(self.select_process_clicked)
+        self.ui.preprocessButton.clicked.connect(self.face_detection)
+        self.ui.classificationButton.clicked.connect(self.emotion_detection)
 
         timer1 = QtCore.QTimer(self)
         timer1.timeout.connect(self.open)
@@ -80,8 +83,19 @@ class MyForm(QtGui.QMainWindow):
 
     def select_save_clicked(self):
         global save_directory
-        save_directory = QtGui.QFileDialog.getExistingDirectory(self,"Vyberte adresar pro ukladani obrazku")
+        save_directory = QtGui.QFileDialog.getExistingDirectory(self, "Vyberte adresar pro ukladani obrazku")
         self.ui.textSavePath.setText(save_directory)
+
+    def select_process_clicked(self):
+        global process_directory
+        process_directory = QtGui.QFileDialog.getExistingDirectory(self, "Vyberte adresar pro zpracovani obrazku")
+        self.ui.textProcessPath.setText(process_directory)
+
+    def face_detection(self):
+        global process_directory, save_directory
+
+    def emotion_detection(self):
+        global process_directory
 
 if __name__ == '__main__':
     faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
