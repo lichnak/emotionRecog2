@@ -2,6 +2,7 @@ from PyQt4 import QtCore, QtGui, uic
 import cv2
 import numpy
 import sys
+from time import gmtime, strftime
 from test1gui import Ui_MainWindow
 
 
@@ -57,11 +58,12 @@ class MyForm(QtGui.QMainWindow):
     def save(self):
         global frame, count, running, save_directory
         if running:
+            count += 1
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # Display the resulting frame
             # cv2.imshow('frame', gray)
-            cv2.imwrite(str(save_directory) + '/' + str(count) + '.jpg', gray)
-            count += 1
+            frameTime = strftime("%Y-%m-%d_%Hh%Mm%Ss", gmtime())
+            cv2.imwrite(str(save_directory) + '/' + frameTime + '.jpg', gray)
             self.ui.savedPicsNumber.setText('Ulozeno obrazku: ' + str(count))
 
     def start_clicked(self):
