@@ -62,6 +62,7 @@ class MyForm(QtGui.QMainWindow):
             # cv2.imshow('frame', gray)
             cv2.imwrite(str(save_directory) + '/' + str(count) + '.jpg', gray)
             count += 1
+            self.ui.savedPicsNumber.setText('Ulozeno obrazku: ' + str(count))
 
     def start_clicked(self):
         global running
