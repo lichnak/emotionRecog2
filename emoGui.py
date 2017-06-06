@@ -15,6 +15,7 @@ class MyForm(QtGui.QMainWindow):
         self.setWindowTitle('GUI')
         self.ui.startButton.clicked.connect(self.start_clicked)
         self.ui.stopButton.clicked.connect(self.stop_clicked)
+        self.ui.selectSaveDirButton.clicked.connect(self.select_save_clicked)
 
         timer1 = QtCore.QTimer(self)
         timer1.timeout.connect(self.open)
@@ -54,19 +55,19 @@ class MyForm(QtGui.QMainWindow):
         lbl.show()
 
     def save(self):
-        global frame, count, running
+        global frame, count, running, save_directory
         if running:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # Display the resulting frame
             # cv2.imshow('frame', gray)
-            cv2.imwrite('./webcam_pics/' + str(count) + '.jpg', gray)
+            cv2.imwrite(str(save_directory) + '/' + str(count) + '.jpg', gray)
             count += 1
 
     def start_clicked(self):
         global running
         running = True
         self.ui.startButton.setEnabled(False)
-        self.ui.startButton.setText('Ukládám...')
+        self.ui.startButton.setText('Ukladam...')
 
     def stop_clicked(self):
         global running
@@ -74,12 +75,18 @@ class MyForm(QtGui.QMainWindow):
         self.ui.startButton.setEnabled(True)
         self.ui.startButton.setText('Start')
 
+    def select_save_clicked(self):
+        global save_directory
+        save_directory = QtGui.QFileDialog.getExistingDirectory(self,"Vyberte adresar pro ukladani obrazku")
+        self.ui.textSavePath.setText(save_directory)
+
 if __name__ == '__main__':
     faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
     # faceCascade = cv2.CascadeClassifier("lbpcascade_frontalface.xml")
     cap = cv2.VideoCapture(1)
     ret0, frame = cap.read()
     count = 0
+
     running = False
     form_class = uic.loadUiType("gui1.ui")[0]
     app = QtGui.QApplication(sys.argv)
