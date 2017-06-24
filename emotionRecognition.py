@@ -15,7 +15,7 @@ def get_files(emotion):  # Define function to get file list, randomly shuffle it
     files2 = glob.glob("webcamed\*.jpg")
     print files
     random.shuffle(files)
-    training = files[:int(len(files) * 0.5)]  # get first 80% of file list
+    training = files[:int(len(files) * 0.6)]  # get first 80% of file list
     #prediction = files[-int(len(files) * 0.5):]  # get last 20% of file list
     prediction = files2
     return training, prediction

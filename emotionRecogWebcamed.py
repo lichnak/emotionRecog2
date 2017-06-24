@@ -3,8 +3,8 @@ import glob
 import random
 import numpy as np
 
-emotions = ["neutral", "anger", "contempt", "disgust", "fear", "happy", "sadness", "surprise"]  # Emotion list
-#emotions = ["neutral", "anger", "disgust", "happy","surprise"]
+#emotions = ["neutral", "anger", "contempt", "disgust", "fear", "happy", "sadness", "surprise"]  # Emotion list
+emotions = [ "anger", "disgust", "happy","surprise","neutral"]
 
 fishface = cv2.createFisherFaceRecognizer()  # Initialize fisher face classifier
 data = {}
@@ -14,7 +14,7 @@ def get_files(emotion):  # Define function to get file list, randomly shuffle it
     files = glob.glob("dataset\\%s\\*" % emotion)
     files2 = glob.glob("webcamed\*.jpg")
     random.shuffle(files)
-    training = files[:int(len(files) * 0.1)]  # get first 80% of file list
+    training = files[:int(len(files) * 0.7)]  # get first 80% of file list
     #prediction = files[-int(len(files) * 0.5):]  # get last 20% of file list
     prediction = files2
     print files2
