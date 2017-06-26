@@ -22,6 +22,8 @@ class MyForm(QtGui.QMainWindow):
         self.ui.selectProcessDirButton.clicked.connect(self.select_process_clicked)
         self.ui.preprocessButton.clicked.connect(self.face_detection)
         self.ui.classificationButton.clicked.connect(self.emotion_detection)
+        self.ui.saveNoteButton.clicked.connect(self.save_note)
+
 
         timer1 = QtCore.QTimer(self)
         timer1.timeout.connect(self.open)
@@ -146,6 +148,12 @@ class MyForm(QtGui.QMainWindow):
 
     def emotion_detection(self):
         global process_directory
+
+    def save_note(self):
+        global save_directory
+        f = open(save_directory + '/f_.txt', 'a')
+        text = self.ui.textEditNote.toPlainText()
+        f.write(text)
 
 if __name__ == '__main__':
     global save_directory
