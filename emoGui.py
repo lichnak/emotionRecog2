@@ -3,8 +3,9 @@ import cv2
 import numpy
 import sys
 import glob
-from time import gmtime, strftime
-from test1gui import Ui_MainWindow
+from datetime import datetime
+from gui3 import Ui_MainWindow
+import os
 
 
 class MyForm(QtGui.QMainWindow):
@@ -28,7 +29,7 @@ class MyForm(QtGui.QMainWindow):
 
         timer2 = QtCore.QTimer(self)
         timer2.timeout.connect(self.save)
-        timer2.start(1000)  # 1 za sekundu
+        timer2.start(333)  # 1 za sekundu
 
     def open(self):
         # get data and display
@@ -66,7 +67,8 @@ class MyForm(QtGui.QMainWindow):
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # Display the resulting frame
             # cv2.imshow('frame', gray)
-            frameTime = strftime("%Y-%m-%d_%Hh%Mm%Ss", gmtime())
+            frameTime = datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S-%f')[:-3]
+            print str(save_directory) + '/' + frameTime + '.jpg'
             cv2.imwrite(str(save_directory) + '/' + frameTime + '.jpg', gray)
             self.ui.savedPicsNumber.setText('Ulozeno obrazku: ' + str(count))
 
@@ -146,14 +148,15 @@ class MyForm(QtGui.QMainWindow):
         global process_directory
 
 if __name__ == '__main__':
+    global save_directory
     faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
     # faceCascade = cv2.CascadeClassifier("lbpcascade_frontalface.xml")
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
     ret0, frame = cap.read()
     count = 0
-
+    save_directory = os.path.abspath('E:/Emotions')
     running = False
-    form_class = uic.loadUiType("gui1.ui")[0]
+    form_class = uic.loadUiType("gui3.ui")[0]
     app = QtGui.QApplication(sys.argv)
     myapp = MyForm()
     myapp.show()
