@@ -11,12 +11,14 @@ import copy
 import ctypes
 import numpy as np
 
-def get_files(emotion):  # Define function to get file list, randomly shuffle it and split 80/20
-    files = glob.glob("dataset\\%s\\*" % emotion)
-    files2 = glob.glob("webcamed\*.jpg")
 
-    training = files[:int(len(files) * 0.6)]  # get first 80% of file list
-    #prediction = files[-int(len(files) * 0.5):]  # get last 20% of file list
+def get_files(emotion):
+    global emotion_db, to_classify_dir
+    files = glob.glob(str(emotion_db) + "\\%s\\*" % emotion)
+    files2 = glob.glob(str(to_classify_dir) + "\*.jpg")
+
+    training = files[:int(len(files) * 0.1)]  # get first 80% of file list
+    # prediction = files[-int(len(files) * 0.5):]  # get last 20% of file list
     prediction = files2
     return training, prediction
 
@@ -46,22 +48,42 @@ def make_sets():
 
 
 def run_recognizer():
-    training_data, training_labels, prediction_data, prediction_labels = make_sets()
-    print prediction_labels
-    print "prediction labels"
-    print "training fisher face classifier"
-    print "size of training set is:", len(training_labels), "images"
-    fishface.train(training_data, np.asarray(training_labels))
+    global to_classify_dir
+    cnt_neutral = 0
+    cnt_anger = 0
+    cnt_contempt = 0
+    cnt_disgust = 0
+    cnt_happy = 0
+    cnt_sadness = 0
+    cnt_surprise = 0
 
-    print "predicting classification set"
+    training_data, training_labels, prediction_data, prediction_labels = make_sets()
+    myapp.ui.textLog.append("training fisher face classifier")
+    myapp.ui.textLog.append("size of training set is: " + str(len(training_labels)) + " images")
+    fishface.train(training_data, np.asarray(training_labels))
+    myapp.ui.textLog.append("predicting classification set")
     cnt = 0
-    correct = 0
-    incorrect = 0
     for image in prediction_data:
 
         pred, conf = fishface.predict(image)
-        print 'Emoce: %s' % prediction_labels[cnt]
-        print emotions[pred]
+        myapp.ui.textLog.append('Emoce: %s' % prediction_labels[cnt] + " " + str(emotions[pred]))
+        os.rename(prediction_labels[cnt], to_classify_dir + "/" + prediction_labels[cnt][-27:-4] + "_"
+                  + emotions[pred] + ".jpg")
+        if emotions[pred] == "neutral":
+            cnt_neutral += 1
+        elif emotions[pred] == "anger":
+            cnt_anger += 1
+        elif emotions[pred] == "contempt":
+            cnt_contempt += 1
+        elif emotions[pred] == "disgust":
+            cnt_disgust += 1
+        elif emotions[pred] == "happy":
+            cnt_happy += 1
+        elif emotions[pred] == "sadness":
+            cnt_sadness += 1
+        elif emotions[pred] == "surprise":
+            cnt_surprise += 1
+
         cnt += 1
         #if pred == prediction_labels[cnt]:
         #    correct += 1
@@ -69,8 +91,18 @@ def run_recognizer():
         #else:
         #    incorrect += 1
         #    cnt += 1
+    f = open(to_classify_dir + '/summary.txt', 'w')
+    text = "neutral: %s" % cnt_neutral + " (%s" + str(float(cnt_neutral) / cnt) + "%)" + "\n" \
+        "anger: %s" % cnt_anger + " (" + str(float(cnt_anger) / cnt) + "%)" + "\n" \
+        "contempt: %s" % cnt_contempt + " (" + str(float(cnt_contempt) / cnt) + "%)" + "\n" \
+        "disgust: %s" % cnt_disgust + " (" + str(float(cnt_disgust) / cnt) + "%)" + "\n" \
+        "happy: %s" % cnt_happy + " (" + str(float(cnt_happy) / cnt) + "%)" + "\n" \
+        "sadness: %s" % cnt_sadness + " (" + str(float(cnt_sadness) / cnt) + "%)" + "\n" \
+        "surprise: %s" % cnt_surprise + " (" + str(float(cnt_surprise) / cnt) + "%)" + "\n"
+    f.write(text)
+    f.write("Celkovy pocet snimku s detekovanym oblicejem: " + str(cnt))
     MessageBox = ctypes.windll.user32.MessageBoxA
-    MessageBox(0, 'Hotovo', 'Vysledky klasifikace', 0x0)
+    MessageBox(0, 'Vysledky klasifikace viz summary.txt', 'Hotovo', 0x0)
     return 0
 
 class MyForm(QtGui.QMainWindow):
@@ -93,6 +125,7 @@ class MyForm(QtGui.QMainWindow):
         self.ui.selectEmotionDbButton.clicked.connect(self.emotion_db_path)
         self.ui.selectClassificationDirButton.clicked.connect(self.select_classification_dir)
 
+        self.ui.textLog.append("Start...")
 
         timer1 = QtCore.QTimer(self)
         timer1.timeout.connect(self.open)
@@ -140,7 +173,7 @@ class MyForm(QtGui.QMainWindow):
             # Display the resulting frame
             # cv2.imshow('frame', gray)
             frameTime = datetime.now().strftime('%Y-%m-%d-%H-%M-%S-%f')[:-3]
-            print unicode(save_path) + '/' + frameTime + '.jpg'
+            self.ui.textLog.append(unicode("Ukladam obrazek: " + save_path) + '/' + frameTime + '.jpg')
             cesta = unicode((unicode(save_path) + '/' + frameTime + '.jpg'))
             cv2.imwrite(cesta, gray)
             self.ui.savedPicsNumber.setText('Ulozeno obrazku: ' + str(count))
@@ -151,7 +184,6 @@ class MyForm(QtGui.QMainWindow):
         try:
             os.makedirs(str(save_directory) + '/' + new_folder_name)
             save_path = str(save_directory) + '/' + new_folder_name
-            print save_path
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
@@ -161,12 +193,14 @@ class MyForm(QtGui.QMainWindow):
         self.ui.startButton.setEnabled(False)
         self.ui.textEditExperiment.setEnabled(False)
         self.ui.startButton.setText('Ukladam...')
+        self.ui.stopButton.setEnabled(True)
 
     def stop_clicked(self):
         global running
         running = False
         self.ui.startButton.setEnabled(True)
         self.ui.startButton.setText('Start')
+        self.ui.stopButton.setEnabled(False)
         self.ui.textEditExperiment.setEnabled(True)
 
     def select_save_clicked(self):
@@ -187,8 +221,8 @@ class MyForm(QtGui.QMainWindow):
         self.ui.preprocessButton.setEnabled(False)
         faces_found = 0
         try:
-            os.makedirs(str(process_directory) + '/processed')
             processed_path = str(process_directory) + '/processed'
+            os.makedirs(str(process_directory) + '/processed')
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
@@ -201,7 +235,6 @@ class MyForm(QtGui.QMainWindow):
 
         filenumber = 0
         for f in files:
-            print f
             face_image = cv2.imread(f)  # Open image
             f_name = "proc" + f[-27:]
             gray = cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY)  # Convert image to grayscale
@@ -230,7 +263,7 @@ class MyForm(QtGui.QMainWindow):
 
             # Cut and save face
             for (x, y, w, h) in facefeatures:  # get coordinates and size of rectangle containing face
-                print "face found in file: %s" % f
+                myapp.ui.textLog.append("face found in file: %s" % f)
                 faces_found += 1
                 gray = gray[y:y + h + 10, x:x + w + 10]  # Cut the frame to size
                 self.ui.facesStatsNumber.setText("Nalezene obliceje/Celkovy pocet souboru: " + str(faces_found) + "/"
@@ -252,33 +285,31 @@ class MyForm(QtGui.QMainWindow):
         try:
             os.makedirs(str(save_directory) + '/' + new_folder_name)
             save_path = str(save_directory) + '/' + new_folder_name
-            print save_path
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
             elif exception.errno == errno.EEXIST:
                 save_path = str(save_directory) + '/' + new_folder_name
-        f = open(save_path + '/f_.txt', 'w')
+        f = open(save_path + '/poznamka.txt', 'w')
         text = self.ui.textEditNote.toPlainText()
         f.write(text)
+        self.ui.textLog.append("Poznamka ulozena do " + str(save_path + '/poznamka.txt'))
 
     def camera_enabler(self):
         global image_enabled, cap, camera_slot
         camera_found = False
         camera_accepted = False
         camera_slot = 0
-        print unicode(self.ui.cameraButton.text())
         if not image_enabled:
             while camera_slot < 10 and not camera_accepted:
-                print "checkuju " + str(camera_slot)
+                self.ui.textLog.append("Hledam kameru ve slotu " + str(camera_slot))
                 if cv2.VideoCapture(camera_slot).isOpened():
-                    print "kamera nalezena"
+                    self.ui.textLog.append("Kamera nalezena")
                     MessageBox = ctypes.windll.user32.MessageBoxA
-                    result = MessageBox(0, 'Pouzit kameru ve slotu ' + str(camera_slot) + '?', 'Kamera nalezena', 0x04)
-                    print result
+                    result = MessageBox(0, 'Pouzit kameru ve slotu ' + str(int(camera_slot)) + '?', 'Kamera nalezena', 0x04)
                     if result == 6:
                         camera_accepted = True
-                        print "beru kameru" + str(camera_accepted)
+                        self.ui.textLog.append("Pouzivam kameru ve slotu: " + str(camera_slot))
                         self.ui.startButton.setEnabled(True)
                     else:
                         camera_accepted = False
@@ -302,6 +333,7 @@ class MyForm(QtGui.QMainWindow):
         cap.release()
         self.ui.cameraButton.setEnabled(True)
         self.ui.startButton.setEnabled(False)
+        self.ui.textLog.append("Kamera vypnuta")
 
     def emotion_db_path(self):
         global emotion_db
