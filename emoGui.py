@@ -19,7 +19,7 @@ class MyForm(QtGui.QMainWindow):
         QtGui.QWidget.__init__(self, parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        self.setWindowTitle('GUI')
+        self.setWindowTitle('Emotion Recognition Python Tool')
         self.ui.startButton.clicked.connect(self.start_clicked)
         self.ui.stopButton.clicked.connect(self.stop_clicked)
         self.ui.selectSaveDirButton.clicked.connect(self.select_save_clicked)
@@ -33,11 +33,11 @@ class MyForm(QtGui.QMainWindow):
 
         timer1 = QtCore.QTimer(self)
         timer1.timeout.connect(self.open)
-        timer1.start(101)  # 30 Hz
+        timer1.start(101)  # 10 Hz
 
         timer2 = QtCore.QTimer(self)
         timer2.timeout.connect(self.save)
-        timer2.start(333)  # 1 za sekundu
+        timer2.start(333)  # 3 za sekundu
 
     def open(self):
         # get data and display
