@@ -4,7 +4,7 @@ import random
 import numpy as np
 
 emotions = ["neutral", "anger", "contempt", "disgust", "fear", "happy", "sadness", "surprise"]  # Emotion list
-#emotions = ["neutral", "anger", "disgust", "happy"]
+emotions = ["neutral", "anger", "disgust", "happy"]
 
 fishface = cv2.createFisherFaceRecognizer()  # Initialize fisher face classifier
 data = {}

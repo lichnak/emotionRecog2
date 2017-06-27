@@ -9,8 +9,69 @@ import os
 import errno
 import copy
 import ctypes
+import numpy as np
+
+def get_files(emotion):  # Define function to get file list, randomly shuffle it and split 80/20
+    files = glob.glob("dataset\\%s\\*" % emotion)
+    files2 = glob.glob("webcamed\*.jpg")
+
+    training = files[:int(len(files) * 0.6)]  # get first 80% of file list
+    #prediction = files[-int(len(files) * 0.5):]  # get last 20% of file list
+    prediction = files2
+    return training, prediction
 
 
+def make_sets():
+    training_data = []
+    training_labels = []
+    prediction_data = []
+    prediction_labels = []
+    for emotion in emotions:
+        training, prediction = get_files(emotion)
+
+        # Append data to training and prediction list, and generate labels 0-7
+        for item in training:
+            image = cv2.imread(item)  # open image
+            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)  # convert to grayscale
+            training_data.append(gray)  # append image array to training data list
+            training_labels.append(emotions.index(emotion))
+
+    for item in prediction:  # repeat above process for prediction set
+        image = cv2.imread(item)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        prediction_data.append(gray)
+        prediction_labels.append(item)
+
+    return training_data, training_labels, prediction_data, prediction_labels
+
+
+def run_recognizer():
+    training_data, training_labels, prediction_data, prediction_labels = make_sets()
+    print prediction_labels
+    print "prediction labels"
+    print "training fisher face classifier"
+    print "size of training set is:", len(training_labels), "images"
+    fishface.train(training_data, np.asarray(training_labels))
+
+    print "predicting classification set"
+    cnt = 0
+    correct = 0
+    incorrect = 0
+    for image in prediction_data:
+
+        pred, conf = fishface.predict(image)
+        print 'Emoce: %s' % prediction_labels[cnt]
+        print emotions[pred]
+        cnt += 1
+        #if pred == prediction_labels[cnt]:
+        #    correct += 1
+        #    cnt += 1
+        #else:
+        #    incorrect += 1
+        #    cnt += 1
+    MessageBox = ctypes.windll.user32.MessageBoxA
+    MessageBox(0, 'Hotovo', 'Vysledky klasifikace', 0x0)
+    return 0
 
 class MyForm(QtGui.QMainWindow):
     def __init__(self, parent=None):
@@ -29,6 +90,8 @@ class MyForm(QtGui.QMainWindow):
         self.ui.saveNoteButton.clicked.connect(self.save_note)
         self.ui.cameraButton.clicked.connect(self.camera_enabler)
         self.ui.cameraDisableButton.clicked.connect(self.camera_disabler)
+        self.ui.selectEmotionDbButton.clicked.connect(self.emotion_db_path)
+        self.ui.selectClassificationDirButton.clicked.connect(self.select_classification_dir)
 
 
         timer1 = QtCore.QTimer(self)
@@ -181,7 +244,7 @@ class MyForm(QtGui.QMainWindow):
         self.ui.preprocessButton.setEnabled(True)
 
     def emotion_detection(self):
-        global process_directory
+        run_recognizer()
 
     def save_note(self):
         global running, save_directory, save_path
@@ -240,9 +303,27 @@ class MyForm(QtGui.QMainWindow):
         self.ui.cameraButton.setEnabled(True)
         self.ui.startButton.setEnabled(False)
 
+    def emotion_db_path(self):
+        global emotion_db
+        emotion_db = QtGui.QFileDialog.getExistingDirectory(self, "Vyberte adresar obsahujici databazi emoci")
+        self.ui.textEmotionDb.setText(emotion_db)
+
+    def select_classification_dir(self):
+        global to_classify_dir
+        to_classify_dir = QtGui.QFileDialog.getExistingDirectory(self, "Vyberte adresar obsahujici obrazky ke klasifikaci")
+        self.ui.textClassificationPath.setText(to_classify_dir)
+        self.ui.classificationButton.setEnabled(True)
+
 
 if __name__ == '__main__':
     global save_directory, save_path, frame_pure, image_enabled
+    #emotions = ["neutral", "anger", "contempt", "disgust", "fear", "happy", "sadness", "surprise"]  # Emotion list
+    # emotions = ["neutral", "anger", "disgust", "happy"]
+    emotions = ["neutral", "anger", "contempt", "disgust", "happy", "sadness", "surprise"]
+
+    fishface = cv2.createFisherFaceRecognizer()  # Initialize fisher face classifier
+    data = {}
+
     image_enabled = False
     faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
     # faceCascade = cv2.CascadeClassifier("lbpcascade_frontalface.xml")
@@ -257,3 +338,5 @@ if __name__ == '__main__':
     myapp = MyForm()
     myapp.show()
     sys.exit(app.exec_())
+
+
