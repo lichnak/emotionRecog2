@@ -6,6 +6,10 @@ import glob
 from datetime import datetime
 from gui3 import Ui_MainWindow
 import os
+import errno
+import copy
+import ctypes
+
 
 
 class MyForm(QtGui.QMainWindow):
@@ -23,6 +27,8 @@ class MyForm(QtGui.QMainWindow):
         self.ui.preprocessButton.clicked.connect(self.face_detection)
         self.ui.classificationButton.clicked.connect(self.emotion_detection)
         self.ui.saveNoteButton.clicked.connect(self.save_note)
+        self.ui.cameraButton.clicked.connect(self.camera_enabler)
+        self.ui.cameraDisableButton.clicked.connect(self.camera_disabler)
 
 
         timer1 = QtCore.QTimer(self)
@@ -35,49 +41,62 @@ class MyForm(QtGui.QMainWindow):
 
     def open(self):
         # get data and display
-        global cap, frame, faceCascade
-        ret, frame = cap.read()
+        global cap, frame_pure, faceCascade, image_enabled
+        if image_enabled:
+            ret, frame_pure = cap.read()
+            frame = copy.deepcopy(frame_pure)
+            # Our operations on the frame come here
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = faceCascade.detectMultiScale(
+                gray,
+                scaleFactor=1.05,
+                minNeighbors=8,
+                minSize=(55, 55),
+                flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+            )
+            for (x, y, w, h) in faces:
 
-        # Our operations on the frame come here
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = faceCascade.detectMultiScale(
-            gray,
-            scaleFactor=1.05,
-            minNeighbors=8,
-            minSize=(55, 55),
-            flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-        )
-        for (x, y, w, h) in faces:
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
 
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-
-        height, width, channel = frame.shape
-        bytesperline = 3 * width
-        qimg = QtGui.QImage(frame, width, height, bytesperline, QtGui.QImage.Format_RGB888)
-        image = QtGui.QPixmap.fromImage(qimg)
-        if image.isNull():
-            QtGui.QMessageBox.information(self, "Image Viewer","Cannot load")
-            return
-        lbl = QtGui.QLabel(self.ui.graphicsView)
-        lbl.setPixmap(image)
-        lbl.show()
+            height, width, channel = frame.shape
+            bytesperline = 3 * width
+            qimg = QtGui.QImage(frame, width, height, bytesperline, QtGui.QImage.Format_RGB888)
+            image = QtGui.QPixmap.fromImage(qimg)
+            if image.isNull():
+                QtGui.QMessageBox.information(self, "Image Viewer","Cannot load")
+                return
+            lbl = QtGui.QLabel(self.ui.graphicsView)
+            lbl.setPixmap(image)
+            lbl.show()
 
     def save(self):
-        global frame, count, running, save_directory
+        global frame_pure, count, running, save_path
         if running:
             count += 1
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray = cv2.cvtColor(frame_pure, cv2.COLOR_BGR2GRAY)
             # Display the resulting frame
             # cv2.imshow('frame', gray)
-            frameTime = datetime.utcnow().strftime('%Y-%m-%d-%H-%M-%S-%f')[:-3]
-            print str(save_directory) + '/' + frameTime + '.jpg'
-            cv2.imwrite(str(save_directory) + '/' + frameTime + '.jpg', gray)
+            frameTime = datetime.now().strftime('%Y-%m-%d-%H-%M-%S-%f')[:-3]
+            print unicode(save_path) + '/' + frameTime + '.jpg'
+            cesta = unicode((unicode(save_path) + '/' + frameTime + '.jpg'))
+            cv2.imwrite(cesta, gray)
             self.ui.savedPicsNumber.setText('Ulozeno obrazku: ' + str(count))
 
     def start_clicked(self):
-        global running
+        global running, save_directory, save_path
+        new_folder_name = unicode(self.ui.textEditExperiment.toPlainText())
+        try:
+            os.makedirs(str(save_directory) + '/' + new_folder_name)
+            save_path = str(save_directory) + '/' + new_folder_name
+            print save_path
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
+            elif exception.errno == errno.EEXIST:
+                save_path = str(save_directory) + '/' + new_folder_name
         running = True
         self.ui.startButton.setEnabled(False)
+        self.ui.textEditExperiment.setEnabled(False)
         self.ui.startButton.setText('Ukladam...')
 
     def stop_clicked(self):
@@ -85,6 +104,7 @@ class MyForm(QtGui.QMainWindow):
         running = False
         self.ui.startButton.setEnabled(True)
         self.ui.startButton.setText('Start')
+        self.ui.textEditExperiment.setEnabled(True)
 
     def select_save_clicked(self):
         global save_directory
@@ -94,22 +114,33 @@ class MyForm(QtGui.QMainWindow):
     def select_process_clicked(self):
         global process_directory
         process_directory = QtGui.QFileDialog.getExistingDirectory(self, "Vyberte adresar pro zpracovani obrazku")
+        files = glob.glob(str(process_directory) + "\*.jpg")
+        self.ui.facesStatsNumber.setText("Nalezene obliceje/Celkovy pocet souboru: 0/" + str(len(files)))
+        self.ui.preprocessButton.setEnabled(True)
         self.ui.textProcessPath.setText(process_directory)
 
     def face_detection(self):
-        global process_directory, save_directory
+        global process_directory, save_path
+        self.ui.preprocessButton.setEnabled(False)
+        faces_found = 0
+        try:
+            os.makedirs(str(process_directory) + '/processed')
+            processed_path = str(process_directory) + '/processed'
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
+
         faceDet = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
         faceDet2 = cv2.CascadeClassifier("haarcascade_frontalface_alt2.xml")
         faceDet3 = cv2.CascadeClassifier("haarcascade_frontalface_alt.xml")
         faceDet4 = cv2.CascadeClassifier("haarcascade_frontalface_alt_tree.xml")
+        files = glob.glob(str(process_directory) + "\*.jpg")
 
-        files = glob.glob(str(save_directory) + "\*.jpg")
-        print files
         filenumber = 0
         for f in files:
             print f
             face_image = cv2.imread(f)  # Open image
-            f_name = f[-24:]
+            f_name = "proc" + f[-27:]
             gray = cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY)  # Convert image to grayscale
 
             # Detect face using 4 different classifiers
@@ -126,7 +157,7 @@ class MyForm(QtGui.QMainWindow):
             if len(face) == 1:
                 facefeatures = face
             elif len(face2) == 1:
-                facefeatures == face2
+                facefeatures = face2
             elif len(face3) == 1:
                 facefeatures = face3
             elif len(face4) == 1:
@@ -137,32 +168,89 @@ class MyForm(QtGui.QMainWindow):
             # Cut and save face
             for (x, y, w, h) in facefeatures:  # get coordinates and size of rectangle containing face
                 print "face found in file: %s" % f
+                faces_found += 1
                 gray = gray[y:y + h + 10, x:x + w + 10]  # Cut the frame to size
-
+                self.ui.facesStatsNumber.setText("Nalezene obliceje/Celkovy pocet souboru: " + str(faces_found) + "/"
+                                                 + str(len(files)))
                 try:
                     out = cv2.resize(gray, (350, 350))  # Resize face so all images have same size
-                    cv2.imwrite(str(process_directory) + '/' + f_name, out)  # Write image
+                    cv2.imwrite(str(processed_path) + '/' + f_name, out)  # Write image
                 except:
                     pass  # If error, pass file
             filenumber += 1  # Increment image number
+        self.ui.preprocessButton.setEnabled(True)
 
     def emotion_detection(self):
         global process_directory
 
     def save_note(self):
-        global save_directory
-        f = open(save_directory + '/f_.txt', 'a')
+        global running, save_directory, save_path
+        new_folder_name = unicode(self.ui.textEditExperiment.toPlainText())
+        try:
+            os.makedirs(str(save_directory) + '/' + new_folder_name)
+            save_path = str(save_directory) + '/' + new_folder_name
+            print save_path
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
+            elif exception.errno == errno.EEXIST:
+                save_path = str(save_directory) + '/' + new_folder_name
+        f = open(save_path + '/f_.txt', 'w')
         text = self.ui.textEditNote.toPlainText()
         f.write(text)
 
+    def camera_enabler(self):
+        global image_enabled, cap, camera_slot
+        camera_found = False
+        camera_accepted = False
+        camera_slot = 0
+        print unicode(self.ui.cameraButton.text())
+        if not image_enabled:
+            while camera_slot < 10 and not camera_accepted:
+                print "checkuju " + str(camera_slot)
+                if cv2.VideoCapture(camera_slot).isOpened():
+                    print "kamera nalezena"
+                    MessageBox = ctypes.windll.user32.MessageBoxA
+                    result = MessageBox(0, 'Pouzit kameru ve slotu ' + str(camera_slot) + '?', 'Kamera nalezena', 0x04)
+                    print result
+                    if result == 6:
+                        camera_accepted = True
+                        print "beru kameru" + str(camera_accepted)
+                        self.ui.startButton.setEnabled(True)
+                    else:
+                        camera_accepted = False
+                        camera_slot += 1
+                else:
+                    camera_slot += 1
+
+
+            if camera_accepted:
+                image_enabled = not image_enabled
+                if image_enabled:
+                    self.ui.cameraButton.setEnabled(False)
+                    cap = cv2.VideoCapture(camera_slot)
+                else:
+                    cap.release()
+                    self.ui.cameraButton.setEnabled(True)
+
+    def camera_disabler(self):
+        global cap, image_enabled
+        image_enabled = False
+        cap.release()
+        self.ui.cameraButton.setEnabled(True)
+        self.ui.startButton.setEnabled(False)
+
+
 if __name__ == '__main__':
-    global save_directory
+    global save_directory, save_path, frame_pure, image_enabled
+    image_enabled = False
     faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
     # faceCascade = cv2.CascadeClassifier("lbpcascade_frontalface.xml")
-    cap = cv2.VideoCapture(0)
-    ret0, frame = cap.read()
+    #cap = cv2.VideoCapture(0)
+    #ret0, frame_pure = cap.read()
     count = 0
     save_directory = os.path.abspath('E:/Emotions')
+    save_path = save_directory
     running = False
     form_class = uic.loadUiType("gui3.ui")[0]
     app = QtGui.QApplication(sys.argv)
