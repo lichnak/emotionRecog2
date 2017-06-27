@@ -1,6 +1,5 @@
 from PyQt4 import QtCore, QtGui, uic
 import cv2
-import numpy
 import sys
 import glob
 from datetime import datetime
