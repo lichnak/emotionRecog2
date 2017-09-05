@@ -16,7 +16,7 @@ def get_files(emotion):
     global emotion_db, to_classify_dir
     files = glob.glob(str(emotion_db) + "\\%s\\*" % emotion)
     files2 = glob.glob(str(to_classify_dir) + "\*.jpg")
-
+    #
     training = files[:int(len(files) * 1)]  # get first 80% of file list
     # prediction = files[-int(len(files) * 0.5):]  # get last 20% of file list
     prediction = files2
