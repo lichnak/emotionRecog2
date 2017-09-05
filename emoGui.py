@@ -9,6 +9,7 @@ import errno
 import copy
 import ctypes
 import numpy as np
+from xml.etree.ElementTree import parse, SubElement
 
 
 def get_files(emotion):
@@ -16,7 +17,7 @@ def get_files(emotion):
     files = glob.glob(str(emotion_db) + "\\%s\\*" % emotion)
     files2 = glob.glob(str(to_classify_dir) + "\*.jpg")
 
-    training = files[:int(len(files) * 0.1)]  # get first 80% of file list
+    training = files[:int(len(files) * 1)]  # get first 80% of file list
     # prediction = files[-int(len(files) * 0.5):]  # get last 20% of file list
     prediction = files2
     return training, prediction
@@ -59,8 +60,10 @@ def run_recognizer():
     training_data, training_labels, prediction_data, prediction_labels = make_sets()
     myapp.ui.textLog.append("training fisher face classifier")
     myapp.ui.textLog.append("size of training set is: " + str(len(training_labels)) + " images")
+    app.processEvents()
     fishface.train(training_data, np.asarray(training_labels))
     myapp.ui.textLog.append("predicting classification set")
+    app.processEvents()
     cnt = 0
     for image in prediction_data:
 
@@ -84,6 +87,7 @@ def run_recognizer():
             cnt_surprise += 1
 
         cnt += 1
+        app.processEvents()
         #if pred == prediction_labels[cnt]:
         #    correct += 1
         #    cnt += 1
@@ -276,7 +280,11 @@ class MyForm(QtGui.QMainWindow):
         self.ui.preprocessButton.setEnabled(True)
 
     def emotion_detection(self):
+        self.ui.textLog.append("Probiha klasifikace")
+        self.ui.classificationButton.setEnabled(False)
+        app.processEvents()
         run_recognizer()
+        self.ui.classificationButton.setEnabled(True)
 
     def save_note(self):
         global running, save_directory, save_path
@@ -347,11 +355,12 @@ class MyForm(QtGui.QMainWindow):
 
 
 if __name__ == '__main__':
-    global save_directory, save_path, frame_pure, image_enabled
+    global save_directory, save_path, frame_pure, image_enabled, emotion_db
     #emotions = ["neutral", "anger", "contempt", "disgust", "fear", "happy", "sadness", "surprise"]  # Emotion list
     # emotions = ["neutral", "anger", "disgust", "happy"]
     emotions = ["neutral", "anger", "contempt", "disgust", "happy", "sadness", "surprise"]
-
+    projectPath = os.path.dirname(sys.path[0])
+    emotion_db = os.path.join(projectPath, 'dataset')
     fishface = cv2.createFisherFaceRecognizer()  # Initialize fisher face classifier
     data = {}
 
@@ -361,13 +370,11 @@ if __name__ == '__main__':
     #cap = cv2.VideoCapture(0)
     #ret0, frame_pure = cap.read()
     count = 0
-    save_directory = os.path.abspath('E:/Emotions')
+    save_directory = os.path.join(projectPath, 'saved_emotions')
     save_path = save_directory
     running = False
-    form_class = uic.loadUiType("gui3.ui")[0]
+    #form_class = uic.loadUiType("gui3.ui")[0]
     app = QtGui.QApplication(sys.argv)
     myapp = MyForm()
     myapp.show()
     sys.exit(app.exec_())
-
-

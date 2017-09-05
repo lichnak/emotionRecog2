@@ -9,7 +9,7 @@ startRun = datetime.datetime.now()
 faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
 smileCascade = cv2.CascadeClassifier("haarcascade_smile.xml")
 
-cap = cv2.VideoCapture(1)  #0,1,2.. dokud se nenajde webka
+cap = cv2.VideoCapture(0)  #0,1,2.. dokud se nenajde webka
 cap.set(3, 640)
 cap.set(4, 480)
 
@@ -26,6 +26,7 @@ while True:
 
     ret, frame = cap.read()  #Capture frame-by-frame
     img = frame
+    cv2.imshow('jejedno', img)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     faces = faceCascade.detectMultiScale(
