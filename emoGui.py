@@ -61,7 +61,9 @@ def run_recognizer():
     myapp.ui.textLog.append("training fisher face classifier")
     myapp.ui.textLog.append("size of training set is: " + str(len(training_labels)) + " images")
     app.processEvents()
-    fishface.train(training_data, np.asarray(training_labels))
+    # fishface.train(training_data, np.asarray(training_labels))
+    # fishface.save('fish.xml')
+    fishface.load("fish.xml")
     myapp.ui.textLog.append("predicting classification set")
     app.processEvents()
     cnt = 0
@@ -127,6 +129,8 @@ class MyForm(QtGui.QMainWindow):
         self.ui.cameraDisableButton.clicked.connect(self.camera_disabler)
         self.ui.selectEmotionDbButton.clicked.connect(self.emotion_db_path)
         self.ui.selectClassificationDirButton.clicked.connect(self.select_classification_dir)
+        self.ui.selectVideoDirButton.clicked.connect(self.select_video_dir)
+        self.ui.videoButton.clicked.connect(self.video_conversion)
 
         self.ui.textLog.append("Start...")
 
@@ -342,6 +346,18 @@ class MyForm(QtGui.QMainWindow):
         self.ui.startButton.setEnabled(False)
         self.ui.textLog.append("Kamera vypnuta")
 
+    def video_conversion(self):
+        global to_video_dir
+        vidcap = cv2.VideoCapture(str(to_video_dir))
+        success, image = vidcap.read()
+        count = 0
+        success = True
+        while success:
+            success, image = vidcap.read()
+            print('Read a new frame: ', success)
+            cv2.imwrite("frame%d.jpg" % count, image)  # save frame as JPEG file
+            count += 1
+
     def emotion_db_path(self):
         global emotion_db
         emotion_db = QtGui.QFileDialog.getExistingDirectory(self, "Vyberte adresar obsahujici databazi emoci")
@@ -353,6 +369,12 @@ class MyForm(QtGui.QMainWindow):
         self.ui.textClassificationPath.setText(to_classify_dir)
         self.ui.classificationButton.setEnabled(True)
 
+    def select_video_dir(self):
+        global to_video_dir
+        to_video_dir = QtGui.QFileDialog.getOpenFileName(self, "Vyberte soubor s videem", "", "Video file *.mp4")
+        self.ui.textVideoPath.setText(to_video_dir)
+        self.ui.videoButton.setEnabled(True)
+        print(to_video_dir)
 
 if __name__ == '__main__':
     global save_directory, save_path, frame_pure, image_enabled, emotion_db
@@ -361,9 +383,10 @@ if __name__ == '__main__':
     emotions = ["neutral", "anger", "contempt", "disgust", "happy", "sadness", "surprise"]
     projectPath = os.path.dirname(sys.path[0])
     emotion_db = os.path.join(projectPath, 'dataset')
-    fishface = cv2.createFisherFaceRecognizer()  # Initialize fisher face classifier
-    data = {}
+    # fishface = cv2.createFisherFaceRecognizer()  # Initialize fisher face classifier
+    fishface = cv2.createFisherFaceRecognizer()
 
+    data = {}
     image_enabled = False
     faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
     # faceCascade = cv2.CascadeClassifier("lbpcascade_frontalface.xml")
