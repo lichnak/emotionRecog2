@@ -214,6 +214,13 @@ class Ui_MainWindow(object):
         font.setPointSize(12)
         self.dbEmotionLabel_4.setFont(font)
         self.dbEmotionLabel_4.setObjectName(_fromUtf8("dbEmotionLabel_4"))
+        self.trainRButton = QtGui.QRadioButton(self.centralwidget)
+        self.trainRButton.setGeometry(QtCore.QRect(820, 640, 141, 17))
+        self.trainRButton.setObjectName(_fromUtf8("trainRButton"))
+        self.pretrainRButton = QtGui.QRadioButton(self.centralwidget)
+        self.pretrainRButton.setGeometry(QtCore.QRect(820, 660, 151, 17))
+        self.pretrainRButton.setChecked(True)
+        self.pretrainRButton.setObjectName(_fromUtf8("pretrainRButton"))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1180, 21))
@@ -280,14 +287,6 @@ class Ui_MainWindow(object):
         self.videoButton.setText(_translate("MainWindow", "Zkonvertovat video", None))
         self.dbEmotionLabel_3.setText(_translate("MainWindow", "Konverze videa", None))
         self.dbEmotionLabel_4.setText(_translate("MainWindow", "Log", None))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtGui.QApplication(sys.argv)
-    MainWindow = QtGui.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
+        self.trainRButton.setText(_translate("MainWindow", "Použit zvolenou db", None))
+        self.pretrainRButton.setText(_translate("MainWindow", "Předtrénovaný klasifikátor", None))
 

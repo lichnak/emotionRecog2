@@ -58,12 +58,15 @@ def run_recognizer():
     cnt_surprise = 0
 
     training_data, training_labels, prediction_data, prediction_labels = make_sets()
-    # myapp.ui.textLog.append("training fisher face classifier")
-    # myapp.ui.textLog.append("size of training set is: " + str(len(training_labels)) + " images")
-    app.processEvents()
-    # fishface.train(training_data, np.asarray(training_labels))
-    # fishface.save('fish.xml')
-    fishface.load("fish.xml")
+    if myapp.ui.pretrainRButton.isChecked() == True:
+        fishface.load("fish.xml")
+    if myapp.ui.trainRButton.isChecked() == True:
+        myapp.ui.textLog.append("training fisher face classifier")
+        myapp.ui.textLog.append("size of training set is: " + str(len(training_labels)) + " images")
+        app.processEvents()
+        fishface.train(training_data, np.asarray(training_labels))
+        # fishface.save('fish.xml')
+
     myapp.ui.textLog.append("predicting classification set")
     app.processEvents()
     cnt = 0
