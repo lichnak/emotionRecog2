@@ -385,7 +385,7 @@ if __name__ == '__main__':
     emotion_db = os.path.join(projectPath, 'dataset')
     # fishface = cv2.createFisherFaceRecognizer()  # Initialize fisher face classifier
     fishface = cv2.createFisherFaceRecognizer()
-
+    #pokus
     data = {}
     image_enabled = False
     faceCascade = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
