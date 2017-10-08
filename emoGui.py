@@ -58,8 +58,8 @@ def run_recognizer():
     cnt_surprise = 0
 
     training_data, training_labels, prediction_data, prediction_labels = make_sets()
-    myapp.ui.textLog.append("training fisher face classifier")
-    myapp.ui.textLog.append("size of training set is: " + str(len(training_labels)) + " images")
+    # myapp.ui.textLog.append("training fisher face classifier")
+    # myapp.ui.textLog.append("size of training set is: " + str(len(training_labels)) + " images")
     app.processEvents()
     # fishface.train(training_data, np.asarray(training_labels))
     # fishface.save('fish.xml')
@@ -355,7 +355,7 @@ class MyForm(QtGui.QMainWindow):
         while success:
             success, image = vidcap.read()
             print('Read a new frame: ', success)
-            cv2.imwrite("frame%d.jpg" % count, image)  # save frame as JPEG file
+            cv2.imwrite(os.path.dirname(str(to_video_dir))+"/frame%d.jpg" % count, image)  # save frame as JPEG file
             count += 1
 
     def emotion_db_path(self):
